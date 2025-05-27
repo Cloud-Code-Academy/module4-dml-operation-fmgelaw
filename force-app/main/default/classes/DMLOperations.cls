@@ -32,12 +32,27 @@ public with sharing class DMLOperations {
     public static Id insertNewAccount() {
         // Create a new Account instance
         Account acc = new Account();
+        ID insertedAccId;
         // Set some fields on the Account
         acc.Name = 'DmlInsertTest-' + String.valueOf(Datetime.now().getTime());
         // Insert the Account into the database
-        insert acc;
+        //insert acc;
+         // Insert the Account using Database.insert with AccessLevel
+        Database.SaveResult result = Database.insert(acc, false, AccessLevel.USER_MODE);
+        //AccessLevel.USER_MODE ensures the operation respects field-level security (FLS) and object-level permissions.
+        //he second parameter false means partial success is allowed
         // Return the Id of the newly created Account
-        return acc.id;
+        // Check if the insert was successful
+        if (result.isSuccess()) {
+            insertedAccId = result.getId();
+        } else {
+        // Optionally handle errors here
+        //even for single recored insert error could be multiple
+            for (Database.Error err : result.getErrors()) {
+                System.debug('Insert failed: ' + err.getMessage());
+            }
+        }
+        return insertedAccId;
     }
 
     /**
@@ -82,7 +97,8 @@ public with sharing class DMLOperations {
      */
     public static void updateContactLastName(Id contactId, String newLastName) {
         // Retrieve the Contact from the database
-        Contact con = [SELECT Id FROM Contact WHERE Id = :contactId];
+        ////you need to inclued the field you will be modifing a field in list of fields you are retriving
+        Contact con = [SELECT Id, LastName FROM Contact WHERE Id = :contactId];
         // Update the Contact's last name
         con.LastName = newLastName;
         // Update the Contact in the database
@@ -98,7 +114,7 @@ public with sharing class DMLOperations {
      */
     public static void updateOpportunityStage(Id oppId, String newStage) {
         // Retrieve the Opportunity from the database
-        Opportunity opp = [SELECT Id FROM Opportunity WHERE Id = :oppId];
+        Opportunity opp = [SELECT Id, StageName FROM Opportunity WHERE Id = :oppId];
         // Update the Opportunity's stage
         opp.StageName = newStage;
         // Update the Opportunity in the database
@@ -115,7 +131,7 @@ public with sharing class DMLOperations {
      */
     public static void updateAccountFields(Id accountId, String newName, String newIndustry) {
         // Query the account
-        Account acc = [SELECT Id FROM Account WHERE Id = :accountId];
+        Account acc = [SELECT Id, Name, Industry FROM Account WHERE Id = :accountId];
         // Update the Account with the given Id with the new name and industry
         acc.Name = newName;
         acc.Industry = newIndustry;
@@ -167,12 +183,12 @@ public with sharing class DMLOperations {
         List<Opportunity> oppList = new List<Opportunity>();
         List<String> existingOppNames = new List<String>();
         
-        for (Opportunity opp : [SELECT Name FROM Opportunity WHERE Name NOT IN :oppNames]) {
+        //Look for Opportunities whose name is in the list of names and are also associated with the give account.
+        for (Opportunity opp : [SELECT Name FROM Opportunity WHERE Name NOT IN :oppNames AND AccountId = :acc.Id]) {
             existingOppNames.add(opp.Name);
         }
         
-        for(String oppName : oppNames){
-            
+        for(String oppName : oppNames){   
             if(!existingOppNames.contains(oppName)){
                 Opportunity opp = new Opportunity(Name = oppName, AccountId = acc.id, StageName = 'Prospecting', CloseDate = Date.today().addMonths(1));
                 oppList.add(opp);
@@ -218,7 +234,8 @@ public with sharing class DMLOperations {
 	 */
 	public static void upsertAccountsWithContacts(List<Contact> contactsToUpsert) {
 		// Loop through each Contact
-        List<Contact> updatedContactList = new List<Contact>();
+        //List<Contact> updatedContactList = new List<Contact>(); //You don't actually need this extra List, 
+        //just update the records in the List provided as an argument and then upsert that List.
         List<String> conLastNames = new List<String>();
         for (Contact con: contactsToUpsert) {
             conLastNames.add(con.LastName);
@@ -238,10 +255,11 @@ public with sharing class DMLOperations {
             } else {
                 con.AccountId = conLastNameToaccMap.get(con.LastName).Id;
             }
-            updatedContactList.add(con);
+           // updatedContactList.add(con);
         }
 		// Upsert the Contacts
-        upsert updatedContactList;
+        //upsert updatedContactList;
+        upsert contactsToUpsert;
 	}
 
     /**
