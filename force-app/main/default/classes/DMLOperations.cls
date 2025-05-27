@@ -102,7 +102,7 @@ public with sharing class DMLOperations {
         // Update the Contact's last name
         con.LastName = newLastName;
         // Update the Contact in the database
-        update con;
+        Update con;
     }
 
     /**
@@ -178,7 +178,7 @@ public with sharing class DMLOperations {
             // Add the Opportunity to the list
         // Upsert the list of Opportunities
         Account acc = new Account(Name = accountName);
-        upsert acc;
+        Upsert acc;
 
         List<Opportunity> oppList = new List<Opportunity>();
         List<String> existingOppNames = new List<String>();
@@ -194,7 +194,7 @@ public with sharing class DMLOperations {
                 oppList.add(opp);
             }
         }
-        upsert oppList;
+        Upsert oppList;
     }
     
     /**
@@ -205,11 +205,11 @@ public with sharing class DMLOperations {
 	 * @param accountName The name of the Account to be upserted.
 	 * @return The Account that was upserted.
 	 */
-	public static Account upsertAccount(String accountName) {
+    public static Account upsertAccount(String accountName) {
 		// Query for the Account
-		List<Account> accounts = [SELECT Id FROM Account WHERE Name = :accountName];
+	List<Account> accounts = [SELECT Id FROM Account WHERE Name = :accountName];
         Account acc = new Account();
-		// if the Account exists, update the description
+	// if the Account exists, update the description
         // otherwise, create a new Account and set the description
         if(!accounts.isEmpty()){
             acc.Id = accounts[0].Id;
@@ -218,10 +218,10 @@ public with sharing class DMLOperations {
             acc.Name = accountName;
             acc.Description = 'New Account';
         }
-		// Upsert the Account
-        upsert acc;
-		return acc;
-	}
+	// Upsert the Account
+        Upsert acc;
+     	return acc;
+     }
 
     /**
      * Question 10
@@ -232,8 +232,8 @@ public with sharing class DMLOperations {
      * Example Contact.LastName = 'Jane' Link to Account.Name = 'Jane'
 	 * @param contactsToUpsert List of Contacts to be upserted and linked to accounts.
 	 */
-	public static void upsertAccountsWithContacts(List<Contact> contactsToUpsert) {
-		// Loop through each Contact
+     public static void upsertAccountsWithContacts(List<Contact> contactsToUpsert) {
+	// Loop through each Contact
         //List<Contact> updatedContactList = new List<Contact>(); //You don't actually need this extra List, 
         //just update the records in the List provided as an argument and then upsert that List.
         List<String> conLastNames = new List<String>();
@@ -260,7 +260,7 @@ public with sharing class DMLOperations {
 		// Upsert the Contacts
         //upsert updatedContactList;
         upsert contactsToUpsert;
-	}
+     }
 
     /**
      * Question 11
